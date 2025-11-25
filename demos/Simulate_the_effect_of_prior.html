@@ -30,14 +30,16 @@
         return 1 - func_resp0(stim, threshold, slope, guess, lapse) 
     }
 
-    const true_threshold = -20
-    const true_slope = 3
+    const true_threshold = 42
+    const true_slope = 3.5
     const true_guess = 0.5
     const true_lapse = 0.02
 
-    const contrast_samples = jsQuestPlus.linspace(-40, 0) // [-40, -39, -38, ..., -1, 0]
-    const threshold_samples = jsQuestPlus.linspace(-40,0) // [-40, -39, -38, ..., -1, 0]
-    const slope_samples = jsQuestPlus.linspace(2,5) // [2, 3, 4, 5]
+    const contrast_samples = jsQuestPlus.linspace(40, 80) // [-40, -39, -38, ..., -1, 0]
+    const threshold_samples = jsQuestPlus.linspace(40,80) // [-40, -39, -38, ..., -1, 0]
+    
+    //const slope_samples = jsQuestPlus.linspace(2,5) // [2, 3, 4, 5]
+    const slope_samples = [3.5]
     const guess = [true_guess]
     const lapse_samples = jsQuestPlus.array(0, 0.01, 0.04) // [0, 0.01, 0.02, 0.03, 0.04]
 
@@ -55,7 +57,7 @@
 
     let current_prior = undefined
 
-    for (let i = 0; i < 50; i++){
+    for (let i = 0; i < 1; i++){
         const jsqp = new jsQuestPlus({
             psych_func: [func_resp0, func_resp1],
             stim_samples: [contrast_samples],
@@ -63,7 +65,7 @@
             priors: current_prior
         })
 
-        const nTrials = 64 // This is identical to that of Watson (2017)
+        const nTrials = 10 // This is identical to that of Watson (2017)
         for (let i = 0; i < nTrials; i++){
             const contrast = jsqp.getStimParams()
             const resp = simulate_observer(contrast) 
@@ -78,6 +80,6 @@
             current_prior = jsqp.posteriors
         }
     }
-
+console.log(current_prior)
 </script>
 </html>
