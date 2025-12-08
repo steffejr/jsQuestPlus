@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="../dist/jsQuestPlus.js"></script>
+    </head>
+<body>
+    Simulation based on the Hochenberger 2019 paper.
+    <p>Please open the JavaScript console window in your browser. If you are using Chrome on Windows, press Ctrl + Shift + I to open the console.</p>
+</body>
+<script>
+    
+    function func_resp0(stim, threshold, slope, guess, lapse) {
+        return 1 - lapse - (1 - guess - lapse )*Math.exp(-Math.pow(stim/threshold,slope))
+        //return lapse*guess+(1-lapse)*(1-(1-guess)*Math.exp(-10*Math.pow(slope*(stim+threshold))))
+    }
+
+    // Psychometric function corresponding to the second response (response = 1).
+    function func_resp1(stim, threshold, slope, guess, lapse) {
+        return 1 - func_resp0(stim, threshold, slope, guess, lapse) 
+    }
+
+    function simulate_resp(current_intensity, true_threshold, true_slope, true_guess, true_lapse){
+        var currentThresh = func_resp0(current_intensity, true_threshold, true_slope, true_guess, true_lapse)
+        
+        if (Math.random() > 0.5 )
+        {
+              return 1 // yes
+          } else {
+              return 0 // no
+          }
+      } 
+      
+      // 16 is the smallest concentration  
+      // 1 is the largest concentration
+
+    const contrast_samples = jsQuestPlus.linspace(1,16)
+    const threshold_samples = jsQuestPlus.linspace(1,16) // [-40, -39, -38, ..., -1, 0]
+    const slope = [3.5] // Don't forget to add brackets, i.e., specify as an array.
+    const guess = [0.33]
+    const lapse = [0.01]
+    
+    const threshold_prior = jsQuestPlus.gauss(threshold_samples, 7, 20)
+    console.log(threshold_prior)
+    const jsqp = new jsQuestPlus({
+        psych_func:  [func_resp0, func_resp1], 
+        stim_samples: [contrast_samples], 
+        psych_samples: [threshold_samples, slope, guess, lapse],
+        //priors: [threshold_prior]
+        priors: jsQuestPlus.set_prior([threshold_prior, slope.length, guess.length, lapse.length]),
+    })
+
+    var RealThreshold = 5
+
+    console.log("1 :"+func_resp0(1, RealThreshold, slope, guess, lapse))
+    console.log("2 :"+func_resp0(2, RealThreshold, slope, guess, lapse))
+    console.log("3 :"+func_resp0(3, RealThreshold, slope, guess, lapse))
+    console.log("4 :"+func_resp0(4, RealThreshold, slope, guess, lapse))
+    console.log("5 :"+func_resp0(5, RealThreshold, slope, guess, lapse))
+    console.log("6 :"+func_resp0(6, RealThreshold, slope, guess, lapse))
+    console.log("7 :"+func_resp0(7, RealThreshold, slope, guess, lapse))
+    console.log("8 :"+func_resp0(8, RealThreshold, slope, guess, lapse))
+    console.log("9 :"+func_resp0(9, RealThreshold, slope, guess, lapse))
+    console.log("10:"+func_resp0(10, RealThreshold, slope, guess, lapse))
+    console.log("11:"+func_resp0(11, RealThreshold, slope, guess, lapse))
+    console.log("12:"+func_resp0(12, RealThreshold, slope, guess, lapse))
+    console.log("13:"+func_resp0(13, RealThreshold, slope, guess, lapse))
+
+    console.log("Starting Point")
+    console.log(jsqp)
+    console.log(jsqp.getEstimates())
+
+    
+
+    console.log("Presenting "+jsqp.getStimParams()+", answer correct")
+    console.log(func_resp0(jsqp.getStimParams(), RealThreshold, slope, guess, lapse))
+
+
+    jsqp.update(jsqp.getStimParams(), 1)
+    console.log(jsqp)
+    console.log(jsqp.getEstimates())
+
+    console.log("Presenting "+jsqp.getStimParams()+", answer correct")
+    console.log(func_resp0(jsqp.getStimParams(), RealThreshold, slope, guess, lapse))
+    jsqp.update(jsqp.getStimParams(), 1)
+    console.log(jsqp)
+    console.log(jsqp.getEstimates())
+
+    
+    
+</script>
