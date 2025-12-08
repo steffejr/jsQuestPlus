@@ -18,28 +18,38 @@
     function func_resp1(stim, threshold, slope, guess, lapse) {
         return 1 - func_resp0(stim, threshold, slope, guess, lapse) 
     }
-
+    
+    
     function simulate_resp(current_intensity, true_threshold, true_slope, true_guess, true_lapse){
         var currentThresh = func_resp0(current_intensity, true_threshold, true_slope, true_guess, true_lapse)
         
-        if (Math.random() > 0.5 )
+        // if current stimulus is below threshold, then guess at guess rate
+        // if current stim is ABOVE threshold, then get it correct at prob of 
+        // currentThresh value
+        if (Math.random() >  ( 1 - currentThresh ))
         {
-              return 1 // yes
+              return 0 // yes
           } else {
-              return 0 // no
+              return 1 // no
           }
+          /*if (current_intensity > true_threshold )
+          { return 0}
+          else {return 1}*/
       } 
-      
-      // 16 is the smallest concentration  
-      // 1 is the largest concentration
 
-    const contrast_samples = jsQuestPlus.linspace(1,16)
-    const threshold_samples = jsQuestPlus.linspace(1,16) // [-40, -39, -38, ..., -1, 0]
+      // 16 is the smallest concentration  
+      // The psychometric function considers bigger as harder to detect. This is the
+      // reverse of what the Sniffin Sticks are. For them, 16 is the highest concentration.
+      // 1 is the largest concentration
+      // We need to think in reverse, maps the stick numbers backwards.
+
+    const contrast_samples = jsQuestPlus.linspace(1,16,150)
+    const threshold_samples = jsQuestPlus.linspace(1,16,150) // [-40, -39, -38, ..., -1, 0]
     const slope = [3.5] // Don't forget to add brackets, i.e., specify as an array.
     const guess = [0.33]
     const lapse = [0.01]
     
-    const threshold_prior = jsQuestPlus.gauss(threshold_samples, 7, 20)
+    const threshold_prior = jsQuestPlus.gauss(threshold_samples, 7, 10)
     console.log(threshold_prior)
     const jsqp = new jsQuestPlus({
         psych_func:  [func_resp0, func_resp1], 
@@ -49,7 +59,7 @@
         priors: jsQuestPlus.set_prior([threshold_prior, slope.length, guess.length, lapse.length]),
     })
 
-    var RealThreshold = 5
+    var RealThreshold = 3
 
     console.log("1 :"+func_resp0(1, RealThreshold, slope, guess, lapse))
     console.log("2 :"+func_resp0(2, RealThreshold, slope, guess, lapse))
@@ -66,25 +76,19 @@
     console.log("13:"+func_resp0(13, RealThreshold, slope, guess, lapse))
 
     console.log("Starting Point")
-    console.log(jsqp)
     console.log(jsqp.getEstimates())
-
+ 
+    for ( var i = 0; i < 20; i++ )
+    { 
+            console.log("Presenting "+jsqp.getStimParams())
+        console.log(func_resp0(jsqp.getStimParams(), RealThreshold, slope, guess, lapse))
+        SimResponse = simulate_resp(jsqp.getStimParams(), RealThreshold, slope, guess, lapse)
+        console.log("SIMULATE RESPONSE: "+SimResponse)
+        jsqp.update(jsqp.getStimParams(), SimResponse)
+    }
+    console.log(jsqp.getEstimates())
+    console.log(jsqp.getSDs())
     
-
-    console.log("Presenting "+jsqp.getStimParams()+", answer correct")
-    console.log(func_resp0(jsqp.getStimParams(), RealThreshold, slope, guess, lapse))
-
-
-    jsqp.update(jsqp.getStimParams(), 1)
-    console.log(jsqp)
-    console.log(jsqp.getEstimates())
-
-    console.log("Presenting "+jsqp.getStimParams()+", answer correct")
-    console.log(func_resp0(jsqp.getStimParams(), RealThreshold, slope, guess, lapse))
-    jsqp.update(jsqp.getStimParams(), 1)
-    console.log(jsqp)
-    console.log(jsqp.getEstimates())
-
     
     
 </script>
