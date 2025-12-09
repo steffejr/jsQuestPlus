@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html>
     <head>
+        
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="../dist/jsQuestPlus.js"></script>
     </head>
 <body>
     Simulation based on the Hochenberger 2019 paper.
     <p>Please open the JavaScript console window in your browser. If you are using Chrome on Windows, press Ctrl + Shift + I to open the console.</p>
+    <canvas id="myChart" style="width:100%;max-width:700px;max-height:300px"></canvas>
+    <canvas id="myChart02" style="width:100%;max-width:700px;max-height:300px"></canvas>
 </body>
 <script>
     
@@ -59,36 +63,104 @@
         priors: jsQuestPlus.set_prior([threshold_prior, slope.length, guess.length, lapse.length]),
     })
 
-    var RealThreshold = 3
+    var RealThreshold = 10
+    xyData = []
+    for ( var i = 1; i < 17; i++ )
+    { xyData.push({x:i,y:func_resp0(i, RealThreshold, slope, guess, lapse)}) }
+    
 
-    console.log("1 :"+func_resp0(1, RealThreshold, slope, guess, lapse))
-    console.log("2 :"+func_resp0(2, RealThreshold, slope, guess, lapse))
-    console.log("3 :"+func_resp0(3, RealThreshold, slope, guess, lapse))
-    console.log("4 :"+func_resp0(4, RealThreshold, slope, guess, lapse))
-    console.log("5 :"+func_resp0(5, RealThreshold, slope, guess, lapse))
-    console.log("6 :"+func_resp0(6, RealThreshold, slope, guess, lapse))
-    console.log("7 :"+func_resp0(7, RealThreshold, slope, guess, lapse))
-    console.log("8 :"+func_resp0(8, RealThreshold, slope, guess, lapse))
-    console.log("9 :"+func_resp0(9, RealThreshold, slope, guess, lapse))
-    console.log("10:"+func_resp0(10, RealThreshold, slope, guess, lapse))
-    console.log("11:"+func_resp0(11, RealThreshold, slope, guess, lapse))
-    console.log("12:"+func_resp0(12, RealThreshold, slope, guess, lapse))
-    console.log("13:"+func_resp0(13, RealThreshold, slope, guess, lapse))
+    
 
+    new Chart("myChart", {
+        type: "scatter",
+        data: {
+            datasets: [{
+            pointRadius: 4,
+            pointBackgroundColor: "rgba(0,0,255,1)",
+            data: xyData
+            }]
+        },
+        options: {
+            plugins: {legend: {display: false},
+            title: {
+                display: true,
+                text: "The Psychometric function with a TRUE threshold of "+RealThreshold,
+                fontSize: 16
+            }}
+        } 
+    });
+   
     console.log("Starting Point")
-    console.log(jsqp.getEstimates())
- 
-    for ( var i = 0; i < 20; i++ )
+    console.log(jsqp.getEstimates()[0])
+    var simDataY = []
+    var simDataN = []
+    var xDataY = []
+    var xDataN = []
+    for ( var i = 0; i < 40; i++ )
     { 
-            console.log("Presenting "+jsqp.getStimParams())
-        console.log(func_resp0(jsqp.getStimParams(), RealThreshold, slope, guess, lapse))
+        
         SimResponse = simulate_resp(jsqp.getStimParams(), RealThreshold, slope, guess, lapse)
-        console.log("SIMULATE RESPONSE: "+SimResponse)
+        //simData.push({x:i, y:func_resp0(jsqp.getStimParams(), RealThreshold, slope, guess, lapse)})
+        if ( SimResponse == 0 )
+        { 
+            xDataN.push(i)
+            simDataN.push(jsqp.getEstimates()[0]) 
+        }
+        else { 
+            xDataY.push(i)
+            simDataY.push(jsqp.getEstimates()[0]) 
+        }
         jsqp.update(jsqp.getStimParams(), SimResponse)
     }
     console.log(jsqp.getEstimates())
     console.log(jsqp.getSDs())
     
-    
+    new Chart("myChart02", {
+        type: "scatter",
+        data: {
+            
+            datasets: [{
+                pointRadius: 4,
+                //pointBackgroundColor: "rgba(0,0,255,1)",
+                borderColor: "red",
+                fill: true,
+                fillColor: "red",
+                data: simDataN.map((v,i) => ({ x: xDataN[i], y: v }))
+            },
+            {
+                pointRadius: 4,
+                //pointBackgroundColor: "rgba(0,0,255,1)",
+                borderColor: "green",
+                fill: true,
+                data: simDataY.map((v,i) => ({ x: xDataY[i], y: v }))
+            }
+        ]
+        },
+        options: {
+            plugins: {legend: {display: false},
+            title: {
+                display: true,
+                text: "Trial Yes/No responses to get to the real threshold of: "+RealThreshold,
+                fontSize: 16
+            }},
+            scales: {
+                y: {
+                    min: 0,
+                    max: 16,
+                    title: {
+                        display: true,
+                        text: "Stick Number"
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: "Trial Number"
+                    }
+                }
+            }
+        } 
+    });
+    console.log(jsqp)
     
 </script>
