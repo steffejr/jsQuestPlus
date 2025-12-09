@@ -10,6 +10,7 @@
     <p>Please open the JavaScript console window in your browser. If you are using Chrome on Windows, press Ctrl + Shift + I to open the console.</p>
     <canvas id="myChart" style="width:100%;max-width:700px;max-height:200px"></canvas>
     <canvas id="myChart02" style="width:100%;max-width:700px;max-height:200px"></canvas>
+    <canvas id="myChart04" style="width:100%;max-width:700px;max-height:200px"></canvas>
     <canvas id="myChart03" style="width:100%;max-width:700px;max-height:500px"></canvas>
 </body>
 <script>
@@ -45,13 +46,13 @@
       // 1 is the largest concentration
       // We need to think in reverse, maps the stick numbers backwards.
 
-    const contrast_samples = jsQuestPlus.linspace(1,16,150)
-    const threshold_samples = jsQuestPlus.linspace(1,16,150) // [-40, -39, -38, ..., -1, 0]
+    const contrast_samples = jsQuestPlus.linspace(1,9,100)
+    const threshold_samples = jsQuestPlus.linspace(1,9,100) // [-40, -39, -38, ..., -1, 0]
     const slope = [3.5] // Don't forget to add brackets, i.e., specify as an array.
-    const guess = [0.33]
-    const lapse = [0.01]
+    const guess = [0.5]
+    const lapse = [0.05]
     
-    const threshold_prior = jsQuestPlus.gauss(threshold_samples, 7, 20)
+    const threshold_prior = jsQuestPlus.gauss(threshold_samples, 6, 20)
 
     console.log(threshold_prior)
     const jsqp = new jsQuestPlus({
@@ -62,11 +63,11 @@
         priors: jsQuestPlus.set_prior([threshold_prior, slope.length, guess.length, lapse.length]),
     })
 
-    var RealThreshold = 10
-    var NTrials = 10
+    var RealThreshold = 7
+    var NTrials = 40
     xyData = []
-    for ( var i = 1; i < 17; i++ )
-    { xyData.push({x:i,y:func_resp0(i, RealThreshold, slope, guess, lapse)}) }
+    for ( var i = 1; i < 10; i++ )
+    { xyData.push({x:i,y:func_resp0(i, RealThreshold, slope[0], guess, lapse)}) }
     
 
     
@@ -96,10 +97,11 @@
     var simDataN = []
     var xDataY = []
     var xDataN = []
+    var SDdata = []
     for ( var i = 0; i < NTrials; i++ )
     { 
-        
-        SimResponse = simulate_resp(jsqp.getStimParams(), RealThreshold, slope, guess, lapse)
+        SDdata.push(jsqp.getSDs()[0])
+        SimResponse = simulate_resp(jsqp.getStimParams(), RealThreshold, slope[0], guess, lapse)
         //simData.push({x:i, y:func_resp0(jsqp.getStimParams(), RealThreshold, slope, guess, lapse)})
         if ( SimResponse == 0 )
         { 
@@ -146,10 +148,55 @@
             scales: {
                 y: {
                     min: 0,
-                    max: 16,
+                    max: 10,
                     title: {
                         display: true,
                         text: "Stick Number"
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: "Trial Number"
+                    }
+                }
+            }
+        } 
+    });
+
+    new Chart("myChart04", {
+        type: "scatter",
+        data: {
+            
+            datasets: [{
+                pointRadius: 4,
+                //pointBackgroundColor: "rgba(0,0,255,1)",
+                borderColor: "red",
+                fill: true,
+                fillColor: "red",
+                data: SDdata.map((v,i) => ({ x: xDataN[i], y: v }))
+            },
+            {
+                pointRadius: 4,
+                //pointBackgroundColor: "rgba(0,0,255,1)",
+                borderColor: "green",
+                fill: true,
+                data: SDdata.map((v,i) => ({ x: xDataY[i], y: v }))
+            }
+        ]
+        },
+        options: {
+            plugins: {legend: {display: false},
+            title: {
+                display: true,
+                text: "Trial Yes/No responses to get to the real threshold of: "+RealThreshold+" Est Thresh: "+jsqp.getEstimates()[0] ,
+                fontSize: 16
+            }},
+            scales: {d 
+                y: {
+                    title: {
+                        display: true,
+                        text: "Standard Deviation"
                     }
                 },
                 x: {
