@@ -1,3 +1,28 @@
+<!-- 
+What would simulations look like? 
+Outcome measures:
+- error between true and estimate
+- SD
+- distance between starting point and true threshold: 
+
+Range of Stimuli
+- 1 to 16
+
+Independent measures
+- number of trials: 5 - 50
+- starting point: range of stimuli
+- beta: 1,5,0.5 (steps)
+- starting prior standarad deviation: range of stimuli
+
+-->
+<script>
+    StimulusRange = jsQuestPlus.linspace(1,16) // 16
+    NTrials = jsQuestPlus.linspace(5,50,10) // 
+    beta = jsQuestPlus.linspace(1,5,10)
+    StartingPoint = StimulusRange
+    priorSD = StimulusRange
+</script>
+
 <!DOCTYPE html>
 <html>
     <head>
@@ -184,4 +209,6 @@ console.log(jsqp.getSDs())
 console.log(jsqp.getStimParams())    
 var error = RealThreshold - jsqp.getEstimates()[0]
 console.log(error)
+
+
 </script>

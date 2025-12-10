@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src='https://cdn.plot.ly/plotly-3.3.0.min.js'></script>
+        <script src="../dist/jsQuestPlus.js"></script>
+    </head>
+<body>
+    Simulation based on the Hochenberger 2019 paper.
+    	<div id='myDiv'></div>
+</body>
+<script>
+    
+    function func_resp0(stim, threshold, slope, guess, lapse) {
+        return 1 - lapse - (1 - guess - lapse )*Math.exp(-Math.pow(stim/threshold,slope))
+        //return lapse*guess+(1-lapse)*(1-(1-guess)*Math.exp(-10*Math.pow(slope*(stim+threshold))))
+    }
+
+    // Psychometric function corresponding to the second response (response = 1).
+    function func_resp1(stim, threshold, slope, guess, lapse) {
+        return 1 - func_resp0(stim, threshold, slope, guess, lapse) 
+    }
+    
+    
+    function simulate_resp(current_intensity, true_threshold, true_slope, true_guess, true_lapse){
+        var currentThresh = func_resp0(current_intensity, true_threshold, true_slope, true_guess, true_lapse)        
+        // if current stimulus is below threshold, then guess at guess rate
+        // if current stim is ABOVE threshold, then get it correct at prob of 
+        // currentThresh value
+        if (Math.random() >  ( 1 - currentThresh ))
+        {
+              return 0 // yes
+          } else {
+              return 1 // no
+          }
+
+      } 
+
+      // 16 is the smallest concentration  
+      // The psychometric function considers bigger as harder to detect. This is the
+      // reverse of what the Sniffin Sticks are. For them, 16 is the highest concentration.
+      // 1 is the largest concentration
+      // We need to think in reverse, maps the stick numbers backwards.
+
+    const contrast_samples = jsQuestPlus.linspace(1,16,150)
+    const threshold_samples = jsQuestPlus.linspace(1,16,150) // [-40, -39, -38, ..., -1, 0]
+    const slope = [3.5] // Don't forget to add brackets, i.e., specify as an array.
+    const guess = [0.33]
+    const lapse = [0.01]
+    
+    const threshold_prior = jsQuestPlus.gauss(threshold_samples, 7, 20)
+
+    const jsqp = new jsQuestPlus({
+        psych_func:  [func_resp0, func_resp1], 
+        stim_samples: [contrast_samples], 
+        psych_samples: [threshold_samples, slope, guess, lapse],
+        //priors: [threshold_prior]
+        priors: jsQuestPlus.set_prior([threshold_prior, slope.length, guess.length, lapse.length]),
+    })
+    
+    var NSim = 100
+    var RealThreshold = 10
+    var NTrials = 50
+    var error = []
+    var simSD = []
+    const t0 = performance.now()
+    
+    for ( var k = 0; k < NSim; k++ )
+    {
+        CURRENTjsqp = jsqp
+        for ( var i = 0; i < NTrials; i++ )
+        {         
+            SimResponse = simulate_resp(jsqp.getStimParams(), RealThreshold, slope, guess, lapse)
+            CURRENTjsqp.update(CURRENTjsqp.getStimParams(), SimResponse)
+        }
+        error.push(CURRENTjsqp.getEstimates()[0]-RealThreshold)
+        simSD.push(CURRENTjsqp.getSDs()[0])
+    }
+    const t1 = performance.now()
+    console.log(`Elapsed time: ${t1-t0}`)
+    console.log(error)
+    var trace = {
+        x: error,
+        type: 'histogram',
+    }
+    var data = [trace]
+    Plotly.newPlot('myDiv', data);
+</script>
