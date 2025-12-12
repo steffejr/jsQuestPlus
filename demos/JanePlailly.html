@@ -65,14 +65,16 @@ Independent measures
       // 1 is the largest concentration
       // We need to think in reverse, maps the stick numbers backwards.
 
-    const contrast_samples = jsQuestPlus.linspace(1,12,89)
+    const contrast_samples = [100,33,3,11,1,3,7,1,23,0.412,0.137,0.0457,0.0152,0.00508,0.00169]
+    for ( var i = 0; i < contrast_samples.length; i++ ) 
+    { contrast_samples[i] = 100 - contrast_samples[i]}
     console.log(contrast_samples)
-    const threshold_samples = jsQuestPlus.linspace(1,12,89) // [-40, -39, -38, ..., -1, 0]
+    const threshold_samples = contrast_samples//[100,33,3,11,1,3,7,1,23,0.412,0.137,0.0457,0.0152,0.00508,0.00169]
     const slope = [3.5] // Don't forget to add brackets, i.e., specify as an array.
     const guess = [0.33]
     const lapse = [0.01]
     
-    const threshold_prior = jsQuestPlus.gauss(threshold_samples, 5.5, 20)
+    const threshold_prior = jsQuestPlus.gauss(threshold_samples, 99, 20)
 
     const jsqp = new jsQuestPlus({
         psych_func:  [func_resp0, func_resp1], 
@@ -82,11 +84,13 @@ Independent measures
         priors: jsQuestPlus.set_prior([threshold_prior, slope.length, guess.length, lapse.length]),
     })
 
-    var RealThreshold = 5.5
+    var RealThreshold = 99.2
     var NTrials = 20
     xyData = []
-    for ( var i = 1; i < 12; i++ )
-    { xyData.push({x:i,y:func_resp0(i, RealThreshold, slope, guess, lapse)}) }
+    for ( var i = 1; i < contrast_samples.length; i++ )
+    { 
+        xyData.push({x:contrast_samples[i],y:func_resp0(i, RealThreshold, slope, guess, lapse)}) 
+    }
     
 
     
@@ -130,9 +134,9 @@ Independent measures
             xDataY.push(i)
             simDataY.push(jsqp.getEstimates()[0]) 
         }
-        console.log(Math.round(jsqp.getStimParams()))
+        //console.log(Math.round(jsqp.getStimParams()))
         // round these to the nearest integer
-        CurrentStim = Math.round(jsqp.getStimParams())
+        CurrentStim = (jsqp.getStimParams())
         jsqp.update(CurrentStim, SimResponse)
     }
     console.log(jsqp.getEstimates())

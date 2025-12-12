@@ -19,7 +19,7 @@ class jsquest {
         this.PF = PF
 
         stim_params.forEach(param =>{
-            if (!Array.isArray(param)) {
+            if (!Array.isArray(param)) 
                 alert('The stimulus parameters must be specified as an array.')
                 this.nAlerts++
             }

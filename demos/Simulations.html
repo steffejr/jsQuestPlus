@@ -28,6 +28,8 @@
         // if current stimulus is below threshold, then guess at guess rate
         // if current stim is ABOVE threshold, then get it correct at prob of 
         // currentThresh value
+        console.log(current_intensity)
+        
         if (Math.random() >  ( 1 - currentThresh ))
         {
               return 0 // yes
@@ -43,13 +45,13 @@
       // 1 is the largest concentration
       // We need to think in reverse, maps the stick numbers backwards.
 
-    const contrast_samples = jsQuestPlus.linspace(1,16,150)
-    const threshold_samples = jsQuestPlus.linspace(1,16,150) // [-40, -39, -38, ..., -1, 0]
+    const contrast_samples = jsQuestPlus.linspace(1,12,100)
+    const threshold_samples = jsQuestPlus.linspace(1,12,100) // [-40, -39, -38, ..., -1, 0]
     const slope = [3.5] // Don't forget to add brackets, i.e., specify as an array.
-    const guess = [0.33]
+    const guess = [0.5]
     const lapse = [0.01]
-    
-    const threshold_prior = jsQuestPlus.gauss(threshold_samples, 7, 20)
+    console.log(contrast_samples)
+    const threshold_prior = jsQuestPlus.gauss(threshold_samples, 5.5, 20)
 
     const jsqp = new jsQuestPlus({
         psych_func:  [func_resp0, func_resp1], 
@@ -59,9 +61,9 @@
         priors: jsQuestPlus.set_prior([threshold_prior, slope.length, guess.length, lapse.length]),
     })
     
-    var NSim = 100
-    var RealThreshold = 10
-    var NTrials = 50
+    var NSim = 500
+    var RealThreshold = 3
+    var NTrials = 10
     var error = []
     var simSD = []
     const t0 = performance.now()
@@ -71,7 +73,8 @@
         CURRENTjsqp = jsqp
         for ( var i = 0; i < NTrials; i++ )
         {         
-            SimResponse = simulate_resp(jsqp.getStimParams(), RealThreshold, slope, guess, lapse)
+            SimResponse = simulate_resp(CURRENTjsqp.getStimParams(), RealThreshold, slope, guess, lapse)
+            
             CURRENTjsqp.update(CURRENTjsqp.getStimParams(), SimResponse)
         }
         error.push(CURRENTjsqp.getEstimates()[0]-RealThreshold)
