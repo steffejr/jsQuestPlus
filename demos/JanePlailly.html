@@ -45,17 +45,26 @@ Independent measures
         return 1 - func_resp0(stim, threshold, slope, guess, lapse) 
     }
     
-    
+    function simulate_resp2(current_intensity, true_threshold)
+    {
+        if ( current_intensity > true_threshold )
+        { return 0}
+        else { return 1 }
+    }
+
     function simulate_resp(current_intensity, true_threshold, true_slope, true_guess, true_lapse){
         var currentThresh = func_resp0(current_intensity, true_threshold, true_slope, true_guess, true_lapse)        
         // if current stimulus is below threshold, then guess at guess rate
         // if current stim is ABOVE threshold, then get it correct at prob of 
+        
         // currentThresh value
-        if (Math.random() >  ( 1 - currentThresh ))
+        var RandomNumber = Math.random()
+        console.log('Prob of YES: '+currentThresh+', RandomNumber: '+RandomNumber)
+        if (RandomNumber >  ( currentThresh ))
         {
-              return 0 // yes
+              return 1 // yes
           } else {
-              return 1 // no
+              return 0 // no
           }
 
       } 
@@ -80,8 +89,8 @@ Independent measures
     const lapse = [0.01]
     
 
-    var StartingGuess = 9.5
-    const threshold_prior = jsQuestPlus.gauss(threshold_samples, StartingGuess, 10)
+    var StartingGuess = 1.5
+    const threshold_prior = jsQuestPlus.gauss(threshold_samples, StartingGuess, 100)
 
     const jsqp = new jsQuestPlus({
         psych_func:  [func_resp0, func_resp1], 
@@ -141,17 +150,15 @@ Independent measures
         }
         else { 
             xDataY.push(i)
-            console.log(jsqp.getEstimates())
-
             simDataY.push(jsqp.getEstimates()[0]) 
         }
         sdData.push(jsqp.getSDs()[0])
         //console.log(Math.round(jsqp.getStimParams()))
         // round these to the nearest integer
         CurrentStim = (jsqp.getStimParams())
-        console.log('Trial: '+i+', Stim: '+CurrentStim)  
+        
         CurrentStim = Math.round(CurrentStim)
-        console.log('Trial: '+i+', Stim: '+CurrentStim)  
+        console.log('Trial: '+i+', Stim: '+CurrentStim+', Response: '+SimResponse)  
         jsqp.update(CurrentStim, SimResponse)
     }
     console.log("FINAL PARAMETERS")
