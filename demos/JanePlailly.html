@@ -35,36 +35,39 @@ Independent measures
 
 <script>
     
-    function func_resp0(stim, threshold, slope, guess, lapse) {
-        return 1 - lapse - (1 - guess - lapse )*Math.exp(-Math.pow(stim/threshold,slope))
+    function func_respYES(stim, threshold, slope, guess, lapse) {
+        
+        //return 1 - lapse - (1 - guess - lapse )*Math.exp(-Math.pow(stim/threshold,slope))
+        return guess + (1 - guess - lapse )*Math.exp(-Math.pow(stim/threshold,slope))
         //return lapse*guess+(1-lapse)*(1-(1-guess)*Math.exp(-10*Math.pow(slope*(stim+threshold))))
     }
 
     // Psychometric function corresponding to the second response (response = 1).
-    function func_resp1(stim, threshold, slope, guess, lapse) {
-        return 1 - func_resp0(stim, threshold, slope, guess, lapse) 
+    function func_respNO(stim, threshold, slope, guess, lapse) {
+        return 1 - func_respYES(stim, threshold, slope, guess, lapse) 
     }
     
     function simulate_resp2(current_intensity, true_threshold)
     {
-        if ( current_intensity > true_threshold )
+        if ( current_intensity < true_threshold )
         { return 0}
         else { return 1 }
     }
 
     function simulate_resp(current_intensity, true_threshold, true_slope, true_guess, true_lapse){
-        var currentThresh = func_resp0(current_intensity, true_threshold, true_slope, true_guess, true_lapse)        
+        var currentProbYes = func_respYES(current_intensity, true_threshold, true_slope, true_guess, true_lapse)        
         // if current stimulus is below threshold, then guess at guess rate
         // if current stim is ABOVE threshold, then get it correct at prob of 
         
         // currentThresh value
         var RandomNumber = Math.random()
-        console.log('Prob of YES: '+currentThresh+', RandomNumber: '+RandomNumber)
-        if (RandomNumber >  ( currentThresh ))
+        console.log('At intensity: '+ current_intensity +', Prob of YES: '+currentProbYes+', RandomNumber: '+RandomNumber)
+        if (RandomNumber <  ( currentProbYes ))
         {
-              return 1 // yes
+              return 0 // yes // This is super confusing. The ZERO means the first psychometric function provided to the algorithm.
+              // If you look at where the new jsQuestPlus was created the first function is the YES and the second is the NO
           } else {
-              return 0 // no
+              return 1 // no // 
           }
 
       } 
@@ -79,7 +82,7 @@ Independent measures
     var contrast_samples = jsQuestPlus.linspace(0,10,101)
     
     contrast_samples[0] = 0.001
-    console.log(contrast_samples)
+    
     /*for ( var i = 0; i < contrast_samples.length; i++ ) 
     { contrast_samples[i] = 100 - contrast_samples[i]}*/
     
@@ -89,27 +92,30 @@ Independent measures
     const lapse = [0.01]
     
 
-    var StartingGuess = 1.5
-    const threshold_prior = jsQuestPlus.gauss(threshold_samples, StartingGuess, 100)
+    var StartingGuess = 5.5
+    const threshold_prior = jsQuestPlus.gauss(threshold_samples, StartingGuess, 20)
 
     const jsqp = new jsQuestPlus({
-        psych_func:  [func_resp0, func_resp1], 
+        psych_func:  [func_respYES, func_respNO], 
         stim_samples: [contrast_samples], 
         psych_samples: [threshold_samples, slope, guess, lapse],
         //priors: [threshold_prior]
         priors: jsQuestPlus.set_prior([threshold_prior, slope.length, guess.length, lapse.length]),
     })
 
-    var RealThreshold = 5
+
+    
+    var RealThreshold = 7
     var NTrials = 40
+    // Create plot of psychoresponse
     xyData = []
     for ( var i = 1; i < contrast_samples.length; i++ )
     { 
-        xyData.push({x:contrast_samples[i],y:func_resp0(contrast_samples[i], RealThreshold, slope, guess, lapse)}) 
+        xyData.push({x:contrast_samples[i],y:func_respYES(contrast_samples[i], RealThreshold, slope[0], guess[0], lapse[0])}) 
     }
     
 
-    
+    console.log('PSYCHOMETRIC RESPONSE')
     console.log(xyData)
     new Chart("myChart", {
         type: "scatter",
@@ -124,14 +130,31 @@ Independent measures
             plugins: {legend: {display: false},
             title: {
                 display: true,
-                text: "The Psychometric function with a TRUE threshold of "+RealThreshold,
+                text: "Trial Yes/No responses to get to the real threshold of: "+RealThreshold,
                 fontSize: 16
-            }}
+            }},
+            scales: {
+                y: {
+                    min: 0.0,
+                    max: 1.02,
+                    title: {
+                        display: true,
+                        text: "Probability of YES response"
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: "Bottle Number"
+                    }
+                }
+            }
         } 
     });
    
     console.log("Starting Point")
     console.log(jsqp.getEstimates()[0])
+    console.log(jsqp.getStimParams())
     var simDataY = []
     var simDataN = []
     var xDataY = []
@@ -140,17 +163,17 @@ Independent measures
     for ( var i = 0; i < NTrials; i++ )
     { 
       
-        SimResponse = simulate_resp(jsqp.getStimParams(), RealThreshold, slope, guess, lapse)
+        SimResponse = simulate_resp2(jsqp.getEstimates()[0], RealThreshold, slope[0], guess[0], lapse[0])
         
         //simData.push({x:i, y:func_resp0(jsqp.getStimParams(), RealThreshold, slope, guess, lapse)})
-        if ( SimResponse == 0 )
+        if ( SimResponse == 0 ) // This is a YES response
         { 
-            xDataN.push(i)
-            simDataN.push(jsqp.getEstimates()[0]) 
-        }
-        else { 
             xDataY.push(i)
             simDataY.push(jsqp.getEstimates()[0]) 
+        }
+        else { 
+            xDataN.push(i)
+            simDataN.push(jsqp.getEstimates()[0]) 
         }
         sdData.push(jsqp.getSDs()[0])
         //console.log(Math.round(jsqp.getStimParams()))
@@ -158,7 +181,9 @@ Independent measures
         CurrentStim = (jsqp.getStimParams())
         
         CurrentStim = Math.round(CurrentStim)
-        console.log('Trial: '+i+', Stim: '+CurrentStim+', Response: '+SimResponse)  
+        if ( SimResponse == 0)
+            {console.log('Trial: '+i+', Stim: '+CurrentStim+', Response: '+'YES') } 
+        else {{console.log('Trial: '+i+', Stim: '+CurrentStim+', Response: '+'NO') } }
         jsqp.update(CurrentStim, SimResponse)
     }
     console.log("FINAL PARAMETERS")
@@ -200,7 +225,7 @@ Independent measures
                     max: 12,
                     title: {
                         display: true,
-                        text: "Stick Number"
+                        text: "Bottle Number"
                     }
                 },
                 x: {
@@ -227,7 +252,25 @@ Independent measures
             pointBackgroundColor: "rgba(0,0,255,1)",
             data: postData
             }]
-        }
+        },
+        options: {
+            plugins: {legend: {display: false},
+        
+        title: {
+                display: true,
+                text: "Posterior Probability",
+                fontSize: 16
+            }},
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: "Bottle Number"
+                    }
+                }
+            }
+        
+    }
     })
 
     var sdDataXY = []
@@ -242,7 +285,25 @@ Independent measures
             pointBackgroundColor: "rgba(0,0,255,1)",
             data: sdDataXY
             }]
-        }
+        },
+options: {
+            plugins: {legend: {display: false},
+        
+        title: {
+                display: true,
+                text: "Standard Deviation",
+                fontSize: 16
+            }},
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: "Trial Number"
+                    }
+                }
+            }
+        
+    }
     })
 console.log(jsqp)    
 console.log(jsqp.getEstimates())    
