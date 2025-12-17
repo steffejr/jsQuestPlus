@@ -49,7 +49,7 @@
 
     let stim;
 
-    const trial = {
+    const trialKB = {
         type: jsPsychHtmlKeyboardResponse,
         stimulus: function(){
             stim = jsqp.getStimParams()
@@ -64,8 +64,25 @@
         }
     }
 
+    const trialBUT = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: function(){
+            stim = jsqp.getStimParams()
+            // Return the stimulus with the parameters suggested by jsQuestPlus.
+            return `<p>Simulation trial = ${trial_num}/${trialsDesired}</p>
+                <p>Contrast = ${stim}</p><p>Press the F or J key.</p>`
+        },
+        choices: ['YES', 'NO'],
+        on_finish(data){
+            console.log("RESPONSE")
+            console.log(data.response)
+            
+            jsqp.update(stim, data.response)
+        }
+    }
+
     const loop_node = {
-        timeline: [trial],
+        timeline: [trialBUT],
         loop_function: function(data){
             if (trial_num < trialsDesired){
                 trial_num++

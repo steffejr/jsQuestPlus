@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="../dist/jsQuestPlus.js"></script>
+    <script src="../src/jspsych.js"></script>
+    <script src="../src/plugin-html-button-response.js"></script>
+    <script src="../src/plugin-html-keyboard-response.js"></script>
+    <script src="../dist/jsQuestPlus.js"></script>
+    <link rel="stylesheet" href="../src/jspsych.css">
+  </head>
+  <body></body>
+  <script>
+        const jsPsych = initJsPsych()
+        console.log(`jsPsych Version ${jsPsych.version()}`)
+
+    const instruction = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `<p>This program demonstrates how to use jsQuestPlus for 
+            <a href="https://jov.arvojournals.org/article.aspx?articleid=2611972#159437865">Watson (2017)'s second example: 
+            "Estimation of contrast threshold, slope, and lapse {1, 3, 2}"</a>.</p>
+            <p>See also <a href="https://github.com/kurokida/jsQuestPlus">the READEME of the jsQuestPlus</a>.</p>`,
+        choices: ['START']
+    }
+    // Psychometric function corresponding to the first response (response = 0).
+    function func_respYES(stim, threshold, slope, guess, lapse) {
+        return guess + (1 - guess - lapse )*Math.exp(-Math.pow(stim/threshold,slope))
+    }
+
+    // Psychometric function corresponding to the second response (response = 1).
+    function func_respNO(stim, threshold, slope, guess, lapse) {
+        return 1 - func_respYES(stim, threshold, slope, guess, lapse) 
+    }
+    // Specifiy the space of all possible stimuli
+    // The 101 is the number of values to split the span of 0 to 10 into.
+    // 101 ensures that integrer values exist
+    var contrast_samples = jsQuestPlus.linspace(0,10,101)
+    // For some reason the psychometric function does not like zero so this is changed to almost zero
+    contrast_samples[0] = 0.001        
+    const threshold_samples = contrast_samples
+    const slope = [3.5] // Don't forget to add brackets, i.e., specify as an array.
+    const guess = [0.5]
+    const lapse = [0.01]
+    // Specify the starting information    
+    var StartingGuess = 7.5
+    var StartingStandardDeviation = 20
+    const threshold_prior = jsQuestPlus.gauss(threshold_samples, StartingGuess, StartingStandardDeviation)
+
+    // Specify the Quest
+        const jsqp = new jsQuestPlus({
+        psych_func:  [func_respYES, func_respNO], 
+        stim_samples: [contrast_samples], 
+        psych_samples: [threshold_samples, slope, guess, lapse],
+        //priors: [threshold_prior]
+        priors: jsQuestPlus.set_prior([threshold_prior, slope.length, guess.length, lapse.length]),
+    })
+
+    let trial_num = 1
+    const trialsDesired = 20
+    const trialBUT = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: function(){
+        stim = jsqp.getStimParams()
+        console.log('STIM: '+stim)
+        console.log('Estimates: ')
+        console.log(jsqp.getEstimates())
+        // Return the stimulus with the parameters suggested by jsQuestPlus.
+        return `<p>Simulation trial = ${trial_num}/${trialsDesired}</p>
+            <p>Contrast = ${stim}</p><p>Press the F or J key.</p>`
+        },
+        choices: ['YES', 'NO'],
+        on_finish(data){
+            console.log("RESPONSE")
+            console.log(data.response)
+            jsqp.update(stim, data.response)
+        }
+    }
+
+    const loop_node = {
+        timeline: [trialBUT],
+        loop_function: function(data){
+            if (trial_num < trialsDesired){
+                trial_num++
+                return true
+            } else {
+                return false
+            }
+        }
+    }
+
+    const briefing = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: function(){
+            const estimates = jsqp.getEstimates()
+            console.log(estimates)
+            return `<p>Final threshold estimate is ${estimates[0]}.</p>
+            <p>Final slope estimate is ${estimates[1]}.</p>
+            <p>Final lapse estimate is ${estimates[3]}.</p>`
+        },
+        choices: ['Finish']
+    }
+
+    jsPsych.run([instruction, loop_node, briefing])
+
+  </script>
+</html>

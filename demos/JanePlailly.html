@@ -36,10 +36,7 @@ Independent measures
 <script>
     
     function func_respYES(stim, threshold, slope, guess, lapse) {
-        
-        //return 1 - lapse - (1 - guess - lapse )*Math.exp(-Math.pow(stim/threshold,slope))
         return guess + (1 - guess - lapse )*Math.exp(-Math.pow(stim/threshold,slope))
-        //return lapse*guess+(1-lapse)*(1-(1-guess)*Math.exp(-10*Math.pow(slope*(stim+threshold))))
     }
 
     // Psychometric function corresponding to the second response (response = 1).
