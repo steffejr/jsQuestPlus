@@ -16,10 +16,7 @@
 
     const instruction = {
         type: jsPsychHtmlButtonResponse,
-        stimulus: `<p>This program demonstrates how to use jsQuestPlus for 
-            <a href="https://jov.arvojournals.org/article.aspx?articleid=2611972#159437865">Watson (2017)'s second example: 
-            "Estimation of contrast threshold, slope, and lapse {1, 3, 2}"</a>.</p>
-            <p>See also <a href="https://github.com/kurokida/jsQuestPlus">the READEME of the jsQuestPlus</a>.</p>`,
+        stimulus: `<p>This program demonstrates how to use jsQuestPlus  </p>`,
         choices: ['START']
     }
     // Psychometric function corresponding to the first response (response = 0).
@@ -31,17 +28,19 @@
     function func_respNO(stim, threshold, slope, guess, lapse) {
         return 1 - func_respYES(stim, threshold, slope, guess, lapse) 
     }
+    
     // Specifiy the space of all possible stimuli
     // The 101 is the number of values to split the span of 0 to 10 into.
     // 101 ensures that integrer values exist
     var contrast_samples = jsQuestPlus.linspace(0,10,101)
     // For some reason the psychometric function does not like zero so this is changed to almost zero
-    contrast_samples[0] = 0.001        
+    contrast_samples[0] = 0.1        
     const threshold_samples = contrast_samples
     const slope = [3.5] // Don't forget to add brackets, i.e., specify as an array.
     const guess = [0.5]
     const lapse = [0.01]
     // Specify the starting information    
+    
     var StartingGuess = 7.5
     var StartingStandardDeviation = 20
     const threshold_prior = jsQuestPlus.gauss(threshold_samples, StartingGuess, StartingStandardDeviation)
@@ -57,16 +56,26 @@
 
     let trial_num = 1
     const trialsDesired = 20
+    let BottleNum = -99
     const trialBUT = {
+
     type: jsPsychHtmlButtonResponse,
     stimulus: function(){
+        
         stim = jsqp.getStimParams()
+        stim = Math.round(stim)
+        if (stim == 0)
+        { 
+            stim = contrast_samples[0]
+            BottleNum = 0
+        } else { BottleNum = stim }
         console.log('STIM: '+stim)
         console.log('Estimates: ')
         console.log(jsqp.getEstimates())
         // Return the stimulus with the parameters suggested by jsQuestPlus.
         return `<p>Simulation trial = ${trial_num}/${trialsDesired}</p>
-            <p>Contrast = ${stim}</p><p>Press the F or J key.</p>`
+            <p>Bottle Number = ${BottleNum}</p>
+            <p>Current Threshold Estimate = ${jsqp.getEstimates()[0]}</p> `
         },
         choices: ['YES', 'NO'],
         on_finish(data){
@@ -93,9 +102,8 @@
         stimulus: function(){
             const estimates = jsqp.getEstimates()
             console.log(estimates)
-            return `<p>Final threshold estimate is ${estimates[0]}.</p>
-            <p>Final slope estimate is ${estimates[1]}.</p>
-            <p>Final lapse estimate is ${estimates[3]}.</p>`
+            return `<p>Final threshold estimate is ${estimates[0]}.</p>`
+
         },
         choices: ['Finish']
     }

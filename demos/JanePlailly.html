@@ -160,17 +160,17 @@ Independent measures
     for ( var i = 0; i < NTrials; i++ )
     { 
       
-        SimResponse = simulate_resp2(jsqp.getEstimates()[0], RealThreshold, slope[0], guess[0], lapse[0])
+        SimResponse = simulate_resp(jsqp.getStimParams(), RealThreshold, slope[0], guess[0], lapse[0])
         
         //simData.push({x:i, y:func_resp0(jsqp.getStimParams(), RealThreshold, slope, guess, lapse)})
         if ( SimResponse == 0 ) // This is a YES response
         { 
             xDataY.push(i)
-            simDataY.push(jsqp.getEstimates()[0]) 
+            simDataY.push(jsqp.getStimParams()) 
         }
         else { 
             xDataN.push(i)
-            simDataN.push(jsqp.getEstimates()[0]) 
+            simDataN.push(jsqp.getStimParams()) 
         }
         sdData.push(jsqp.getSDs()[0])
         //console.log(Math.round(jsqp.getStimParams()))
