@@ -36,7 +36,7 @@ Independent measures
 <script>
     
     function func_respYES(stim, threshold, slope, guess, lapse) {
-        return guess + (1 - guess - lapse )*Math.exp(-Math.pow(stim/threshold,slope))
+        return (1-lapse) - (1 - guess - lapse )*Math.exp(-Math.pow(stim/threshold,slope))
     }
 
     // Psychometric function corresponding to the second response (response = 1).
@@ -76,9 +76,10 @@ Independent measures
       // We need to think in reverse, maps the stick numbers backwards.
 
     //const contrast_samples = [100,33,3,11,1,3,7,1,23,0.412,0.137,0.0457,0.0152,0.00508,0.00169]
-    var contrast_samples = jsQuestPlus.linspace(0,10,101)
-    
-    contrast_samples[0] = 0.001
+    var left_samples = jsQuestPlus.linspace(0,10,101)
+        left_samples[0] = 0.001
+    var right_samples = jsQuestPlus.linspace(0,10,101)
+        right_samples[0] = 0.001
     
     /*for ( var i = 0; i < contrast_samples.length; i++ ) 
     { contrast_samples[i] = 100 - contrast_samples[i]}*/
@@ -94,9 +95,17 @@ Independent measures
     var StartingGuess = 5.5
     const threshold_prior = jsQuestPlus.gauss(threshold_samples, StartingGuess, 20)
 
-    const jsqp = new jsQuestPlus({
+    const jsqpLeft = new jsQuestPlus({
         psych_func:  [func_respYES, func_respNO], 
-        stim_samples: [contrast_samples], 
+        stim_samples: [left_samples], 
+        psych_samples: [threshold_samples, slope, guess, lapse],
+        //priors: [threshold_prior]
+        priors: jsQuestPlus.set_prior([threshold_prior, slope.length, guess.length, lapse.length]),
+    })
+
+    const jsqpRight = new jsQuestPlus({
+        psych_func:  [func_respYES, func_respNO], 
+        stim_samples: [right_samples], 
         psych_samples: [threshold_samples, slope, guess, lapse],
         //priors: [threshold_prior]
         priors: jsQuestPlus.set_prior([threshold_prior, slope.length, guess.length, lapse.length]),
@@ -104,13 +113,58 @@ Independent measures
 
 
     
-    var RealThreshold = 7
-    var NTrials = 40
+    
+// =========================================================================================
+    console.log("Starting Point")
+    console.log(jsqpLeft.getEstimates()[0])
+    console.log(jsqpLeft.getStimParams())
+
+    var RealThresholdL = 7
+    var RealThresholdR = 7
+    var NTrials = 20 // per nostril
+
+    var simDataL = []
+    var simDataR = []
+    var xDataL = []
+    var xDataR = []
+    var sdData = []
+
+    
+    for ( var i = 0; i < NTrials; i++ )
+    { 
+        SimResponse = simulate_resp(jsqpLeft.getStimParams(), RealThreshold, slope[0], guess[0], lapse[0])       
+        //simData.push({x:i, y:func_resp0(jsqp.getStimParams(), RealThreshold, slope, guess, lapse)})
+        if ( SimResponse == 0 ) // This is a YES response
+        { 
+            xDataY.push(i)
+            simDataY.push(jsqpLeft.getStimParams()) 
+        }
+        else { 
+            xDataN.push(i)
+            simDataN.push(jsqpLeft.getStimParams()) 
+        }
+        sdData.push(jsqpLeft.getSDs()[0])
+        //console.log(Math.round(jsqp.getStimParams()))
+        // round these to the nearest integer
+        CurrentStim = (jsqpLeft.getStimParams())
+        
+        CurrentStim = Math.round(CurrentStim)
+        if ( SimResponse == 0)
+            {console.log('Trial: '+i+', Stim: '+CurrentStim+', Response: '+'YES') } 
+        else {{console.log('Trial: '+i+', Stim: '+CurrentStim+', Response: '+'NO') } }
+        jsqpLeft.update(CurrentStim, SimResponse)
+    }
+    console.log("FINAL PARAMETERS")
+    console.log(jsqpLeft.getEstimates())
+    console.log(jsqpLeft.getStimParams())
+    console.log(jsqpLeft.getSDs())
+    console.log(sdData)
+    // =========================================================================================
     // Create plot of psychoresponse
     xyData = []
-    for ( var i = 1; i < contrast_samples.length; i++ )
+    for ( var i = 1; i < left_samples.length; i++ )
     { 
-        xyData.push({x:contrast_samples[i],y:func_respYES(contrast_samples[i], RealThreshold, slope[0], guess[0], lapse[0])}) 
+        xyData.push({x:left_samples[i],y:func_respYES(left_samples[i], RealThreshold, slope[0], guess[0], lapse[0])}) 
     }
     
 
@@ -151,45 +205,7 @@ Independent measures
         } 
     });
    
-    console.log("Starting Point")
-    console.log(jsqp.getEstimates()[0])
-    console.log(jsqp.getStimParams())
-    var simDataY = []
-    var simDataN = []
-    var xDataY = []
-    var xDataN = []
-    var sdData = []
-    for ( var i = 0; i < NTrials; i++ )
-    { 
-      
-        SimResponse = simulate_resp(jsqp.getStimParams(), RealThreshold, slope[0], guess[0], lapse[0])
-        
-        //simData.push({x:i, y:func_resp0(jsqp.getStimParams(), RealThreshold, slope, guess, lapse)})
-        if ( SimResponse == 0 ) // This is a YES response
-        { 
-            xDataY.push(i)
-            simDataY.push(jsqp.getStimParams()) 
-        }
-        else { 
-            xDataN.push(i)
-            simDataN.push(jsqp.getStimParams()) 
-        }
-        sdData.push(jsqp.getSDs()[0])
-        //console.log(Math.round(jsqp.getStimParams()))
-        // round these to the nearest integer
-        CurrentStim = (jsqp.getStimParams())
-        
-        CurrentStim = Math.round(CurrentStim)
-        if ( SimResponse == 0)
-            {console.log('Trial: '+i+', Stim: '+CurrentStim+', Response: '+'YES') } 
-        else {{console.log('Trial: '+i+', Stim: '+CurrentStim+', Response: '+'NO') } }
-        jsqp.update(CurrentStim, SimResponse)
-    }
-    console.log("FINAL PARAMETERS")
-    console.log(jsqp.getEstimates())
-    console.log(jsqp.getStimParams())
-    console.log(jsqp.getSDs())
-    console.log(sdData)
+    // =========================================================================================
     new Chart("myChart02", {
         type: "scatter",
         data: {
@@ -215,7 +231,7 @@ Independent measures
             plugins: {legend: {display: false},
             title: {
                 display: true,
-                text: "Trial Yes/No responses to get to the real threshold of: "+RealThreshold+" Est Thresh: "+jsqp.getEstimates()[0] ,
+                text: "Trial Yes/No responses to get to the real threshold of: "+RealThreshold+" Est Thresh: "+jsqpLeft.getEstimates()[0] ,
                 fontSize: 16
             }},
             scales: {
@@ -236,9 +252,10 @@ Independent measures
             }
         } 
     });
-    console.log(jsqp)
-    var stim_params = jsqp.stim_params[0]
-    postPrior = jsqp.posteriors.normalized_priors
+    // =========================================================================================
+    console.log(jsqpLeft)
+    var stim_params = jsqpLeft.stim_params[0]
+    postPrior = jsqpLeft.posteriors.normalized_priors
     //postPrior = jsqp.posteriors.priors[0]
     postData = []
     for ( var i = 0; i < postPrior.length; i++ )
@@ -271,7 +288,7 @@ Independent measures
         
     }
     })
-
+// =========================================================================================
     var sdDataXY = []
     for ( var i = 0; i < sdData.length; i++ )
     { sdDataXY.push({x:i, y: sdData[i]})}
@@ -304,11 +321,11 @@ options: {
         
     }
     })
-console.log(jsqp)    
-console.log(jsqp.getEstimates())    
-console.log(jsqp.getSDs())    
-console.log(jsqp.getStimParams())    
-var error = RealThreshold - jsqp.getEstimates()[0]
+console.log(jsqpLeft)    
+console.log(jsqpLeft.getEstimates())    
+console.log(jsqpLeft.getSDs())    
+console.log(jsqpLeft.getStimParams())    
+var error = RealThreshold - jsqpLeft.getEstimates()[0]
 console.log(error)
 
 
