@@ -148,10 +148,8 @@ I attached an example to this email. Ia have also found a pdf describing the det
             console.log(jsqp.getEstimates())
             // Return the stimulus with the parameters suggested by jsQuestPlus.
             return `<p>Simulation trial = ${trial_num}/${NTrials}</p>
-                <p>Stimulus = ${stim}</p>    
                 <p>Bottle Number = ${BottleNum}</p>
-                <p>Nostril: ${Side}</p>
-                <p>Current Threshold Estimate = ${MapStimToBottleNumber(jsqp.getEstimates()[0])}</p> `
+                <p>Nostril: ${Side}</p>`
             },
             choices: ['Left', 'Right'],
             on_finish(data){
