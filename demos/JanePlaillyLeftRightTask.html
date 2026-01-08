@@ -46,7 +46,7 @@ I attached an example to this email. Ia have also found a pdf describing the det
     // Which nostril to stimulate. 
     // This is a random choice except where one side or the other has "completed"
     // all of its trials
-    function WhichSideToStimulate(countLEFT, countRIGHT, NTrialsLEFT, NTrialsRIGHT) 
+    function WhichSideToStimulate(countLEFT, countRIGHT, NTrialsLEFT, NTrialsRIGHT, PrevRun, RunLimit) 
         {
             // Scenarios:
             // random number picks side
@@ -77,9 +77,35 @@ I attached an example to this email. Ia have also found a pdf describing the det
                 else 
                 { Side = 'RIGHT' }
             }
+            // Check for runs
+            PrevRun.push(Side)
+            var CurrentRun = 1
+            for ( i = PrevRun.length - 1; i >= 0; i--)
+            {
+                if ( i > 0 )
+                {
+                    if (PrevRun[i] == PrevRun[ i - 1 ])
+                    { CurrentRun++ }
+                    else {
+                        break
+                    }
+                }
+            }           
+            if ( CurrentRun > RunLimit )
+            {
+                if ( Side == "LEFT" ){ Side = "RIGHT"}
+                else if ( Side == "RIGHT" ){ Side = "LEFT"}
+                console.log('RUN LIMIT REACHED, SWITCHING SIDES')
+            }
+            // If the side is switched, make sure to update the run list
+            PrevRun[PrevRun.length-1] = Side
+            console.log("CURRENT RUN IS: "+CurrentRun)   
+              
+            
             // update counters
             if ( Side == 'LEFT' ){ countLEFT = countLEFT + 1 }
             if ( Side == 'RIGHT' ){ countRIGHT = countRIGHT + 1 }
+            
             return Side
         }
     
@@ -127,6 +153,8 @@ I attached an example to this email. Ia have also found a pdf describing the det
     var countLEFT = 0 
     var countRIGHT = 0
     var Side 
+    var PrevRun = []
+    var RunLimit = 3
     var Accuracy = -99
     let trial_num = 1
     
@@ -139,7 +167,8 @@ I attached an example to this email. Ia have also found a pdf describing the det
             BottleNum = Math.round(MapStimToBottleNumber(stim))
             console.log("Bottle NUM: " + BottleNum)
             // Get which nostril to present to
-            Side = WhichSideToStimulate(countLEFT, countRIGHT, NTrialsLEFT, NTrialsRIGHT) 
+            Side = WhichSideToStimulate(countLEFT, countRIGHT, NTrialsLEFT, NTrialsRIGHT, PrevRun, RunLimit) 
+            console.log(PrevRun)
             // update counters
             if ( Side == 'LEFT' ){ countLEFT = countLEFT + 1 }
             if ( Side == 'RIGHT' ){ countRIGHT = countRIGHT + 1 }
@@ -177,6 +206,7 @@ I attached an example to this email. Ia have also found a pdf describing the det
                 data.Accuracy = Accuracy
                 data.Nostril = Side
                 data.BottleNumber = BottleNum
+                data.sd = jsqp.getSDs()[0]
                 data.Estimate = MapStimToBottleNumber(jsqp.getEstimates()[0])
                 jsqp.update(stim, Accuracy)
             }
@@ -207,6 +237,7 @@ I attached an example to this email. Ia have also found a pdf describing the det
                 Str += '<td>Nostril</td>'
                 Str += '<td>Acc</td>'
                 Str += '<td>RT</td>'
+                Str += '<td>Standard Dev</td>'
                 Str += '<td>Estimate</td>'
                 Str += '</tr>'
                 for ( var i = 0; i < NTrials; i++ )
@@ -217,11 +248,12 @@ I attached an example to this email. Ia have also found a pdf describing the det
                     Str += '<td>'+data.trials[i].Nostril+'</td>'
                     Str += '<td>'+data.trials[i].Accuracy+'</td>'
                     Str += '<td>'+data.trials[i].rt+'</td>'
-                    Str += '<td>'+data.trials[i].Estimate+'</td>'
+                    Str += '<td>'+data.trials[i].sd.toFixed(2)+'</td>'
+                    Str += '<td>'+data.trials[i].Estimate.toFixed(2)+'</td>'
                     Str += '</tr>'
                 }
                 '</table>'
-            return `<p>Final threshold estimate is ${MapStimToBottleNumber(estimates[0])}.</p>`+Str
+            return `<p>Final threshold estimate is ${MapStimToBottleNumber(estimates[0].toFixed(2))}.</p>`+Str
 
         },
         choices: ['Finish']
