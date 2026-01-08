@@ -26,6 +26,17 @@ I attached an example to this email. Ia have also found a pdf describing the det
   </head>
   <body></body>
   <script>
+
+    // PARAMETERS THAT CAN BE CHANGED
+    var StartingGuess = 5.5
+    var StartingStandardDeviation = 20
+    var NTrialsLEFT = 10
+    var NTrialsRIGHT = 10
+    var RunLimit = 3
+    var TimeLimit = 45
+    // ========================
+
+
     const jsPsych = initJsPsych(
         {
             on_finish: function() {
@@ -145,8 +156,6 @@ I attached an example to this email. Ia have also found a pdf describing the det
     const lapse = [0.01]
     
     // Specify the starting information. This is the a priori information    
-    var StartingGuess = 5.5
-    var StartingStandardDeviation = 20
     const threshold_prior = jsQuestPlus.gauss(threshold_samples, StartingGuess, StartingStandardDeviation)
 
     // Specify the Quest
@@ -158,14 +167,12 @@ I attached an example to this email. Ia have also found a pdf describing the det
         priors: jsQuestPlus.set_prior([threshold_prior, slope.length, guess.length, lapse.length]),
     })
 
-    var NTrialsLEFT = 10
-    var NTrialsRIGHT = 10
     var NTrials = NTrialsLEFT + NTrialsRIGHT
     var countLEFT = 0 
     var countRIGHT = 0
     var Side 
     var PrevRun = []
-    var RunLimit = 3
+    
     var Accuracy = -99
     let trial_num = 1
     
@@ -208,7 +215,7 @@ const wait = {
 
         stimulus: function(){
             // Get the stimulus/bottle to present
-            countDownDate = 45
+            countDownDate = TimeLimit
             stim = jsqp.getStimParams()
             BottleNum = Math.round(MapStimToBottleNumber(stim))
             console.log("Bottle NUM: " + BottleNum)
