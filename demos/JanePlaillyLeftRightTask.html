@@ -20,12 +20,23 @@ I attached an example to this email. Ia have also found a pdf describing the det
     <script src="../src/jspsych.js"></script>
     <script src="../src/plugin-html-button-response.js"></script>
     <script src="../src/plugin-html-keyboard-response.js"></script>
+    <script src="../src/plugin-call-function.js"></script>
     <script src="../dist/jsQuestPlus.js"></script>
     <link rel="stylesheet" href="../src/jspsych.css">
   </head>
   <body></body>
   <script>
-    const jsPsych = initJsPsych()
+    const jsPsych = initJsPsych(
+        {
+            on_finish: function() {
+                const d = new Date();
+                var StrDate = d.getDate() + "_"+String(Number(d.getMonth())+1)+"_"+d.getFullYear();
+                var StrTime = d.getHours() + "_"+d.getMinutes();
+                var StrDateTime = "_"+StrDate+"__"+StrTime;
+                jsPsych.data.get().localSave('csv','JanePlailly_'+StrDateTime+'.csv');
+           }
+        }
+    )
     console.log(`jsPsych Version ${jsPsych.version()}`)
 
     const instruction = {
@@ -159,10 +170,45 @@ I attached an example to this email. Ia have also found a pdf describing the det
     let trial_num = 1
     
     let BottleNum = -99
+// TIMER
+
+
+// Set the date we're counting down to
+var countDownDate
+var CountdownTimer
+var StartTimer = {
+  type: jsPsychCallFunction,
+  func: function() {
+            // Update the count down every 1 second
+            CountdownTimer = setInterval(function() {
+                countDownDate = countDownDate - 1
+            // Output the result in an element with id="demo"
+                document.getElementById("demo").innerHTML = countDownDate + " sec ";
+            // If the count down is over, write some text 
+            if (countDownDate < 0) {
+                clearInterval(CountdownTimer);
+                document.getElementById("demo").innerHTML = "EXPIRED";
+            }
+            }, 1000);
+  },
+}    
+
+// wait trial
+const wait = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `<p id="demo">${countDownDate} sec</p>`,
+        choices: ['Next Trial'],
+        on_finish() {
+            clearInterval(CountdownTimer);
+        }
+    }
+// ==========
     const trial = {
         type: jsPsychHtmlButtonResponse,
+
         stimulus: function(){
             // Get the stimulus/bottle to present
+            countDownDate = 45
             stim = jsqp.getStimParams()
             BottleNum = Math.round(MapStimToBottleNumber(stim))
             console.log("Bottle NUM: " + BottleNum)
@@ -178,10 +224,12 @@ I attached an example to this email. Ia have also found a pdf describing the det
             // Return the stimulus with the parameters suggested by jsQuestPlus.
             return `<p>Simulation trial = ${trial_num}/${NTrials}</p>
                 <p>Bottle Number = ${BottleNum}</p>
-                <p>Nostril: ${Side}</p>`
+                <p>Nostril: ${Side}</p>
+                <p id="demo">${countDownDate} sec</p>`
             },
             choices: ['Left', 'Right'],
             on_finish(data){
+
                 console.log("RESPONSE")
                 console.log(data.response)
                 // Left (First choice) is a zero
@@ -213,7 +261,7 @@ I attached an example to this email. Ia have also found a pdf describing the det
     }
 
     const loop_node = {
-        timeline: [trial],
+        timeline: [StartTimer, trial, wait],
         loop_function: function(data){
             if (trial_num < NTrials){
                 trial_num++
@@ -253,13 +301,19 @@ I attached an example to this email. Ia have also found a pdf describing the det
                     Str += '</tr>'
                 }
                 '</table>'
-            return `<p>Final threshold estimate is ${MapStimToBottleNumber(estimates[0].toFixed(2))}.</p>`+Str
+            return `<p>Final threshold estimate is ${MapStimToBottleNumber(estimates[0]).toFixed(2)}.</p>`+Str
 
+        },
+        on_finish(data){
+                data.TrialType = 'BRIEF'
+                data.sd = jsqp.getSDs()[0]
+                data.Estimate = MapStimToBottleNumber(jsqp.getEstimates()[0])
         },
         choices: ['Finish']
     }
 
     jsPsych.run([instruction, loop_node, briefing])
+    
 
   </script>
 </html>
