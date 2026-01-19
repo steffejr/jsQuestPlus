@@ -26,7 +26,7 @@ Independent measures
 <body>
     Simulation based on the Hochenberger 2019 paper.
     <p>Please open the JavaScript console window in your browser. If you are using Chrome on Windows, press Ctrl + Shift + I to open the console.</p>
-    <canvas id="myChart" style="width:100%;max-width:700px;max-height:300px"></canvas>
+    <canvas id="myChart" style="width:100%;max-width:1000px;max-height:500px"></canvas>
     <canvas id="myChart02" style="width:100%;max-width:700px;max-height:200px"></canvas>
     <canvas id="myChart03" style="width:100%;max-width:700px;max-height:200px"></canvas>
     <canvas id="myChart04" style="width:100%;max-width:700px;max-height:200px"></canvas>
@@ -36,7 +36,9 @@ Independent measures
 <script>
     
     function func_respYES(stim, threshold, slope, guess, lapse) {
-        return 1 - lapse - (1 - lapse - guess )*Math.exp(-Math.pow(stim/threshold,slope))
+        // return 1 - lapse - (1 - lapse - guess )*Math.exp(-Math.pow(stim/threshold,slope))
+        // return 1 - ( 1 - guess )*Math.exp(Math.pow(-10, (slope/20)*(stim - threshold + lapse)))
+        return 1 - lapse - (1-guess-lapse)*Math.exp(-(Math.pow(10,slope*(stim-threshold)/20)))
     }
 
     // Psychometric function corresponding to the second response (response = 1).
@@ -68,6 +70,22 @@ Independent measures
 
       } 
 
+    function FindClosestBottle(TestValue, threshold_samples)
+    {
+        // Find the value closest to the test value
+        // Calculate the difference score
+        // console.log("DIFFERENCE")
+        var diff = threshold_samples.map(e => e-TestValue)
+        // console.log(diff)
+        // find the absolute value
+        var absArr = diff.map(e => Math.abs(e))
+        // console.log(absArr)
+        // Find the minimum value
+        minVal = Math.min(...absArr)
+        // console.log(minVal)
+        indexMinVal = absArr.indexOf(minVal)
+        return indexMinVal
+    }
       // 16 is the smallest concentration  
       // The psychometric function considers bigger as harder to detect. This is the
       // reverse of what the Sniffin Sticks are. For them, 16 is the highest concentration.
@@ -75,34 +93,49 @@ Independent measures
       // We need to think in reverse, maps the stick numbers backwards.
 
     //const contrast_samples = [100,33,3,11,1,3,7,1,23,0.412,0.137,0.0457,0.0152,0.00508,0.00169]
-    var samples = jsQuestPlus.linspace(0,10,101)
-    samples[0] = 0.001
+    
+    //var samples = jsQuestPlus.linspace(0,10,101)
+    //samples[0] = 0.001
     
     
     /*for ( var i = 0; i < contrast_samples.length; i++ ) 
     { contrast_samples[i] = 100 - contrast_samples[i]}*/
+    var threshold_samples = []
+    threshold_samples.push(100,33.3,11.1,3.7,1.23,0.412,0.137,0.0457,0.0152,0.00508,0.00169)
+    var threshold_samples_dB = threshold_samples.map(Math.log10)
     
-    const threshold_samples = samples//[100,33,3,11,1,3,7,1,23,0.412,0.137,0.0457,0.0152,0.00508,0.00169]
+    threshold_samples_dB = threshold_samples_dB.map(element => element*20)
+    console.log("SAMPLES dB")
+    console.log(threshold_samples)
+    console.log(threshold_samples_dB)
     
-    const slope = [3.5] // Don't forget to add brackets, i.e., specify as an array.
+    
+
+
+    var samples = jsQuestPlus.linspace(threshold_samples_dB[0],threshold_samples_dB[10],101)
+    //samples = threshold_samples_dB
+    console.log(samples)
+
+
+    const slope = [2.5] // Don't forget to add brackets, i.e., specify as an array.
     const guess = [0.5]
     const lapse = [0.01]
     
 
-    var StartingGuess = 5.5
-    const threshold_prior = jsQuestPlus.gauss(threshold_samples, StartingGuess, 20)
+    var StartingGuess = -10
+    const threshold_prior = jsQuestPlus.gauss(samples, StartingGuess, 20)
 
     const jsqp = new jsQuestPlus({
         psych_func:  [func_respNO, func_respYES], 
         stim_samples: [samples], // This is where the stimulus dimensions are defined
-        psych_samples: [threshold_samples, slope, guess, lapse],
+        psych_samples: [samples, slope, guess, lapse],
         //priors: [threshold_prior]
         priors: jsQuestPlus.set_prior([threshold_prior, slope.length, guess.length, lapse.length]),
     })
     
 //console.log(jsqp.getStimParams())
     
-    var RealThreshold = 6
+    var RealThreshold = -10
     
     // Create plot of psychoresponse
     xyData = []
@@ -231,7 +264,11 @@ Independent measures
                 }
                 sdDataLEFT.push(jsqp.getSDs()[0])
                 CurrentStim = (jsqp.getStimParams())
-                jsqp.update(CurrentStim, SimResponse)
+                console.log("CURRENT STIM IS: "+CurrentStim)
+                console.log("CLOSEST BOTTLE: "+threshold_samples_dB[FindClosestBottle(CurrentStim, threshold_samples_dB)])
+
+                // jsqp.update(CurrentStim, SimResponse)
+                jsqp.update(threshold_samples_dB[FindClosestBottle(CurrentStim, threshold_samples_dB)], SimResponse)
                 break;
             case 'RIGHT':
                 SimResponse = simulate_resp(jsqp.getStimParams(), RealThreshold, slope[0], guess[0], lapse[0])
@@ -256,7 +293,9 @@ Independent measures
     }
     console.log(jsqp)
     console.log(xDataYRIGHT)
-    
+    console.log(jsqp.getEstimates()[0])
+    console.log(Math.pow(10,jsqp.getEstimates()[0]/20))
+    console.log(Math.pow(10,0/20))
        
     new Chart("myChart02", {
         type: "scatter",
@@ -308,8 +347,8 @@ Independent measures
             }},
             scales: {
                 y: {
-                    min: 0,
-                    max: 12,
+                    min: -40,
+                    max: 40,
                     title: {
                         display: true,
                         text: "Bottle Number"
