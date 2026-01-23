@@ -102,27 +102,48 @@ Independent measures
     { contrast_samples[i] = 100 - contrast_samples[i]}*/
     var threshold_samples = []
     threshold_samples.push(100,33.3,11.1,3.7,1.23,0.412,0.137,0.0457,0.0152,0.00508,0.00169)
-    var threshold_samples_dB = threshold_samples.map(Math.log10)
     
-    threshold_samples_dB = threshold_samples_dB.map(element => element*20)
+
+    
+    var bottles = []
+    bottles.push(0,1,2,3,4,5,6,7,8,9,10)
+
+    var threshold_samples_dB = threshold_samples.map(Math.log10)
+    threshold_samples_dB = (threshold_samples_dB.map(element => element*20)).map(el=>Math.round(100*el)/100)
+
     console.log("SAMPLES dB")
     console.log(threshold_samples)
     console.log(threshold_samples_dB)
     
+
+
     
+    
+    // When we make the long version we need to keep the exact original locations.
+    // To do this we will add nine numbers equidistant between each point
+    var samples = []
+    for ( var k = 0; k < threshold_samples_dB.length-1; k++ )
+    {
+        temp = jsQuestPlus.linspace(threshold_samples_dB[k],threshold_samples_dB[k+1],10)
+        for ( var i = 0; i < temp.length; i++ )
+        {samples.push(temp[i])}
+    }
+    // Round
+    samples = samples.map(el => Math.round(el*100)/100)
+//var samples = jsQuestPlus.linspace(threshold_samples_dB[0],threshold_samples_dB[10],101).map(el=>Math.round(100*el)/100)
 
-
-    var samples = jsQuestPlus.linspace(threshold_samples_dB[0],threshold_samples_dB[10],101)
+    var bottle_samples = jsQuestPlus.linspace(bottles[0],bottles[10],101)
     //samples = threshold_samples_dB
     console.log(samples)
+    
 
-
-    const slope = [2.5] // Don't forget to add brackets, i.e., specify as an array.
+    const slope = [3.5] // Don't forget to add brackets, i.e., specify as an array.
     const guess = [0.5]
     const lapse = [0.01]
     
 
-    var StartingGuess = -10
+    var StartingGuessBottle = 5
+    var StartingGuess = threshold_samples_dB[StartingGuessBottle]
     const threshold_prior = jsQuestPlus.gauss(samples, StartingGuess, 20)
 
     const jsqp = new jsQuestPlus({
@@ -132,26 +153,29 @@ Independent measures
         //priors: [threshold_prior]
         priors: jsQuestPlus.set_prior([threshold_prior, slope.length, guess.length, lapse.length]),
     })
-    
+    console.log(jsqp)
 //console.log(jsqp.getStimParams())
     
-    var RealThreshold = -10
-    
+    var RealThresholdBottle = 3
+
+    var RealThreshold = threshold_samples_dB[RealThresholdBottle]
     // Create plot of psychoresponse
     xyData = []
-    
+    var temp
     for ( var i = 1; i < samples.length; i++ )
     { 
-        xyData.push(func_respYES(samples[i], RealThreshold, slope[0], guess[0], lapse[0])) 
+        temp = func_respYES(samples[i], RealThreshold, slope[0], guess[0], lapse[0])
+        xyData.push( Math.round(100*temp)/100)
     }
     
+    console.log(func_respYES(samples[100], RealThreshold, slope[0], guess[0], lapse[0]))
 
     console.log('PSYCHOMETRIC RESPONSE')
     console.log(xyData)    
     new Chart("myChart", {
         type: "line",
         data: {
-            labels: samples,
+            labels: bottle_samples,
             datasets: [
                 {
                     label: 'Left',
@@ -165,7 +189,7 @@ Independent measures
             plugins: {legend: {display: true},
             title: {
                 display: true,
-                text: "Real: "+RealThreshold,
+                text: "Real: "+RealThresholdBottle,
                 fontSize: 16
             }},
             scales: {
@@ -342,7 +366,7 @@ Independent measures
             plugins: {legend: {display: false},
             title: {
                 display: true,
-                text: "Trial Yes/No responses to get to the real threshold of: "+RealThreshold+" Est Thresh: "+jsqp.getEstimates()[0] ,
+                text: "Trial Yes/No responses to get to the real threshold of: "+Math.pow(10,RealThreshold/20)+" Est Thresh: "+Math.pow(10,jsqp.getEstimates()[0]/20) ,
                 fontSize: 16
             }},
             scales: {
